@@ -22,16 +22,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
+    "@tensorflow/tfjs-node": "^4.14.0",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "mathjs": "^12.2.0",
+    "multer": "^1.4.5-lts.1",
     "mysql2": "^3.6.5",
     "sequelize": "^6.35.2",
-    "multer": "^1.4.5-lts.1",
-    "xlsx": "^0.18.5",
-    "@tensorflow/tfjs-node": "^4.14.0",
-    "mathjs": "^12.2.0",
-    "bcryptjs": "^2.4.3"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
