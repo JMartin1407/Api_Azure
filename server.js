@@ -12,11 +12,30 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // --- MIDDLEWARES ---
+// Configuración CORS para permitir frontend de Azure Static Web Apps
+const allowedOrigins = [
+  'https://gray-beach-0cdc4470f.3.azurestaticapps.net',
+  'http://localhost:3000',
+  'http://localhost:5173', // Vite dev server
+  'http://localhost:4200', // Angular dev server
+  'http://localhost:3001'  // React dev server alternativo
+];
+
 app.use(cors({
-  origin: '*',
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como Postman, o curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('No permitido por CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['*']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 
 app.use(express.json());
