@@ -15,6 +15,7 @@ const PORT = process.env.PORT || 3000;
 // Configuración CORS para permitir frontend de Azure Static Web Apps
 const allowedOrigins = [
   'https://gray-beach-0cdc4470f.3.azurestaticapps.net',
+  'https://blue-sea-02785951e3.azurestaticapps.net',
   'http://localhost:3000',
   'http://localhost:5173', // Vite dev server
   'http://localhost:4200', // Angular dev server
@@ -124,7 +125,7 @@ app.post('/auth/login', async (req, res) => {
     
     const user = await Usuario.findOne({ where: { email } });
     
-    if (!user || user.password !== password) {
+    if (!user || user.password_hash !== password) {
       return res.status(400).json({ detail: 'Credenciales incorrectas' });
     }
     
