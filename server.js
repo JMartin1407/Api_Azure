@@ -90,6 +90,24 @@ function checkPermission(requiredRole) {
 
 // --- RUTAS ---
 
+// Ruta principal
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'API de Análisis Académico - Express/Node.js',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      login: '/auth/login',
+      upload: '/admin/upload-and-analyze/',
+      dashboards: {
+        admin: '/admin/dashboard/',
+        docente: '/docente/dashboard/'
+      }
+    },
+    status: 'running'
+  });
+});
+
 // Health Check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Backend API is running' });
