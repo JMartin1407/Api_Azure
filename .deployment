@@ -1,0 +1,8 @@
+# Azure Deployment Package
+
+[Build]
+command = npm install --production
+
+[Deployment]
+SCM_DO_BUILD_DURING_DEPLOYMENT = true
+WEBSITE_NODE_DEFAULT_VERSION = 18-lts
