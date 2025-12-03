@@ -1,47 +1,44 @@
-// database.js
-const { Sequelize, DataTypes } = require('sequelize');
-require('dotenv').config();
+// database.js - Configuración de Sequelize para Azure MySQL
 
-// Configuración de la base de datos desde variables de entorno
+require('dotenv').config();
+const { Sequelize, DataTypes } = require('sequelize');
+
+// Leer credenciales de variables de entorno
 const DB_HOST = process.env.DB_HOST || 'localhost';
 const DB_USER = process.env.DB_USER || 'root';
 const DB_PASSWORD = process.env.DB_PASSWORD || '';
 const DB_NAME = process.env.DB_NAME || 'analisis_academico';
-const DB_PORT = process.env.DB_PORT || '3306';
+const DB_PORT = process.env.DB_PORT || 3306;
 
-// Crear instancia de Sequelize
+// Configuración de Sequelize con SSL para Azure MySQL
 const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
   host: DB_HOST,
   port: DB_PORT,
   dialect: 'mysql',
-  logging: false,
   dialectOptions: {
     ssl: {
       require: true,
-      rejectUnauthorized: false // Para Azure MySQL
+      rejectUnauthorized: false
     },
     connectTimeout: 60000
   },
   pool: {
     max: 5,
     min: 0,
-    acquire: 30000,
+    acquire: 60000,
     idle: 10000
-  }
+  },
+  logging: false // Cambiar a console.log para debug
 });
 
-// --- MODELOS ---
+// --- MODELOS ORM ---
 
-// Modelo Usuario (adaptado a la estructura existente de proyectoIngles)
+// Modelo Usuario
 const Usuario = sequelize.define('Usuario', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
-  },
-  nombre: {
-    type: DataTypes.STRING(100),
-    allowNull: false
   },
   email: {
     type: DataTypes.STRING(100),
@@ -54,15 +51,18 @@ const Usuario = sequelize.define('Usuario', {
   },
   rol: {
     type: DataTypes.STRING(50),
-    allowNull: false,
-    defaultValue: 'Admin'
+    allowNull: false
+  },
+  nombre: {
+    type: DataTypes.STRING(100),
+    allowNull: false
   }
 }, {
   tableName: 'usuarios',
   timestamps: false
 });
 
-// Modelo Alumno
+// Modelo AlumnoDB
 const AlumnoDB = sequelize.define('AlumnoDB', {
   id: {
     type: DataTypes.INTEGER,
@@ -74,14 +74,15 @@ const AlumnoDB = sequelize.define('AlumnoDB', {
     allowNull: false
   },
   grupo_tag: {
-    type: DataTypes.STRING(50)
+    type: DataTypes.STRING(50),
+    allowNull: true
   }
 }, {
   tableName: 'alumnos',
   timestamps: false
 });
 
-// Modelo Nota
+// Modelo NotaDB
 const NotaDB = sequelize.define('NotaDB', {
   id: {
     type: DataTypes.INTEGER,
@@ -97,33 +98,39 @@ const NotaDB = sequelize.define('NotaDB', {
     }
   },
   nombre_alumno: {
-    type: DataTypes.STRING(50)
+    type: DataTypes.STRING(50),
+    allowNull: true
   },
   materia: {
-    type: DataTypes.STRING(50)
+    type: DataTypes.STRING(50),
+    allowNull: true
   },
   tema: {
-    type: DataTypes.STRING(100)
+    type: DataTypes.STRING(100),
+    allowNull: true
   },
   calificacion: {
-    type: DataTypes.DECIMAL(5, 2)
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: true
   },
   asistencia_pct: {
-    type: DataTypes.DECIMAL(5, 2)
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: true
   },
   conducta_pct: {
-    type: DataTypes.DECIMAL(5, 2)
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: true
   },
   fecha_registro: {
     type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
+    defaultValue: Sequelize.NOW
   }
 }, {
   tableName: 'notas',
   timestamps: false
 });
 
-// Modelo AnalisisResultado
+// Modelo AnalisisResultadoDB
 const AnalisisResultadoDB = sequelize.define('AnalisisResultadoDB', {
   id: {
     type: DataTypes.INTEGER,
@@ -143,7 +150,8 @@ const AnalisisResultadoDB = sequelize.define('AnalisisResultadoDB', {
     allowNull: false
   },
   nombre_alumno: {
-    type: DataTypes.STRING(150)
+    type: DataTypes.STRING(150),
+    allowNull: true
   },
   probabilidad_riesgo: {
     type: DataTypes.DECIMAL(4, 3),
@@ -154,17 +162,20 @@ const AnalisisResultadoDB = sequelize.define('AnalisisResultadoDB', {
     allowNull: false
   },
   area_de_progreso: {
-    type: DataTypes.DECIMAL(6, 3)
+    type: DataTypes.DECIMAL(6, 3),
+    allowNull: true
   },
   materia_critica_temprana: {
-    type: DataTypes.STRING(100)
+    type: DataTypes.STRING(100),
+    allowNull: true
   },
   recomendacion_pedagogica: {
-    type: DataTypes.STRING(500)
+    type: DataTypes.STRING(500),
+    allowNull: true
   },
   fecha_analisis: {
     type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
+    defaultValue: Sequelize.NOW
   }
 }, {
   tableName: 'analisis_resultado',
@@ -178,43 +189,75 @@ NotaDB.belongsTo(AlumnoDB, { foreignKey: 'alumno_id', as: 'alumno' });
 AlumnoDB.hasMany(AnalisisResultadoDB, { foreignKey: 'alumno_id', as: 'resultados' });
 AnalisisResultadoDB.belongsTo(AlumnoDB, { foreignKey: 'alumno_id', as: 'alumno' });
 
-// --- FUNCIONES DE INICIALIZACIÓN ---
+// --- FUNCIONES DE BASE DE DATOS ---
 
-async function initDbUser() {
-  try {
-    // Sincronizar tablas (NO crear, solo conectar con existentes)
-    // await sequelize.sync({ force: false });
-    console.log('✅ Conectado a base de datos existente');
-    
-    // Verificar si existen usuarios
-    const userCount = await Usuario.count();
-    console.log(`✅ Usuarios en base de datos: ${userCount}`);
-    
-    // NO crear usuarios automáticamente - usar los existentes en proyectoIngles
-    
-  } catch (error) {
-    console.warn('⚠️ Error al conectar con la base de datos:', error.message);
-    console.warn('La aplicación continuará sin usuarios inicializados.');
-  }
-}
-
+/**
+ * Verifica la conexión a la base de datos
+ */
 async function testConnection() {
   try {
     await sequelize.authenticate();
-    console.log('✅ Conexión a MySQL establecida correctamente');
+    console.log('✅ Conexión a Azure MySQL establecida correctamente.');
     return true;
   } catch (error) {
-    console.error('❌ Error al conectar con MySQL:', error.message);
+    console.error('❌ Error al conectar con la base de datos:', error.message);
     return false;
   }
 }
 
+/**
+ * Inicializa usuarios de prueba (solo si la tabla está vacía)
+ */
+async function initDbUser() {
+  try {
+    const userCount = await Usuario.count();
+    
+    if (userCount === 0) {
+      const usuariosPrueba = [
+        {
+          email: 'admin@escuela.edu',
+          password: 'pass123',
+          rol: 'Admin',
+          nombre: 'Admin Superior'
+        },
+        {
+          email: 'docente@escuela.edu',
+          password: 'pass123',
+          rol: 'Docente',
+          nombre: 'Mtra. Elena'
+        },
+        {
+          email: 'alumno@escuela.edu',
+          password: 'pass123',
+          rol: 'Alumno',
+          nombre: 'Alumno Test'
+        },
+        {
+          email: 'padre@escuela.edu',
+          password: 'pass123',
+          rol: 'Padre',
+          nombre: 'Padre de Familia'
+        }
+      ];
+      
+      await Usuario.bulkCreate(usuariosPrueba);
+      console.log('✅ Usuarios de prueba creados.');
+    } else {
+      console.log(`ℹ️ Base de datos ya contiene ${userCount} usuarios. No se crearán usuarios de prueba.`);
+    }
+  } catch (error) {
+    console.error('⚠️ Error durante la inicialización de usuarios:', error.message);
+    console.log('La aplicación continuará, la BD se conectará cuando sea necesario.');
+  }
+}
+
+// Exportar modelos y funciones
 module.exports = {
   sequelize,
   Usuario,
   AlumnoDB,
   NotaDB,
   AnalisisResultadoDB,
-  initDbUser,
-  testConnection
+  testConnection,
+  initDbUser
 };
