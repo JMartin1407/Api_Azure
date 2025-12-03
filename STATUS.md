@@ -30,9 +30,9 @@ Api_azure/
 
 ### 🔗 Azure MySQL Configurado
 ```
-Host: cosa-analizador.mysql.database.azure.com
-User: Martin
-DB: cosa-analizador
+Host: mysqlingles.mysql.database.azure.com
+User: admin_ingles
+DB: proyectoIngles
 SSL: ✓ Habilitado
 ```
 

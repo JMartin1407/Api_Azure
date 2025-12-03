@@ -32,29 +32,30 @@ const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
 
 // --- MODELOS ---
 
-// Modelo Usuario
+// Modelo Usuario (adaptado a la estructura existente de proyectoIngles)
 const Usuario = sequelize.define('Usuario', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
+  nombre: {
+    type: DataTypes.STRING(100),
+    allowNull: false
+  },
   email: {
     type: DataTypes.STRING(100),
     unique: true,
     allowNull: false
   },
-  password_hash: {
+  password: {
     type: DataTypes.STRING(255),
     allowNull: false
   },
   rol: {
     type: DataTypes.STRING(50),
-    allowNull: false
-  },
-  nombre: {
-    type: DataTypes.STRING(100),
-    allowNull: false
+    allowNull: false,
+    defaultValue: 'Admin'
   }
 }, {
   tableName: 'usuarios',
@@ -181,29 +182,19 @@ AnalisisResultadoDB.belongsTo(AlumnoDB, { foreignKey: 'alumno_id', as: 'alumno' 
 
 async function initDbUser() {
   try {
-    // Sincronizar tablas (crear si no existen)
-    await sequelize.sync({ alter: false });
-    console.log('✅ Tablas sincronizadas');
+    // Sincronizar tablas (NO crear, solo conectar con existentes)
+    // await sequelize.sync({ force: false });
+    console.log('✅ Conectado a base de datos existente');
     
-    // Verificar si el usuario admin ya existe
-    const adminUser = await Usuario.findOne({ where: { email: 'admin@escuela.edu' } });
+    // Verificar si existen usuarios
+    const userCount = await Usuario.count();
+    console.log(`✅ Usuarios en base de datos: ${userCount}`);
     
-    if (!adminUser) {
-      const usuariosPrueba = [
-        { email: 'admin@escuela.edu', password_hash: 'pass123', rol: 'Admin', nombre: 'Admin Superior' },
-        { email: 'docente@escuela.edu', password_hash: 'pass123', rol: 'Docente', nombre: 'Mtra. Elena' },
-        { email: 'alumno@escuela.edu', password_hash: 'pass123', rol: 'Alumno', nombre: 'Alumno Test' },
-        { email: 'padre@escuela.edu', password_hash: 'pass123', rol: 'Padre', nombre: 'Padre de Familia' }
-      ];
-      
-      await Usuario.bulkCreate(usuariosPrueba);
-      console.log('✅ Usuarios de prueba creados exitosamente');
-    } else {
-      console.log('✅ Usuarios ya existen en la base de datos');
-    }
+    // NO crear usuarios automáticamente - usar los existentes en proyectoIngles
+    
   } catch (error) {
-    console.warn('⚠️ No se pudo inicializar usuarios:', error.message);
-    console.warn('La aplicación continuará, la BD se conectará cuando sea necesario.');
+    console.warn('⚠️ Error al conectar con la base de datos:', error.message);
+    console.warn('La aplicación continuará sin usuarios inicializados.');
   }
 }
 

@@ -78,11 +78,12 @@ if ($LASTEXITCODE -eq 0) {
 # Configurar variables de entorno
 Write-Host "`n⚙️ Configurando variables de entorno..." -ForegroundColor Yellow
 az webapp config appsettings set --resource-group $resourceGroup --name $appName --settings `
-    DB_HOST="cosa-analizador.mysql.database.azure.com" `
-    DB_USER="Martin" `
-    DB_PASSWORD="FILOMENO.2025" `
-    DB_NAME="cosa-analizador" `
+    DB_HOST="mysqlingles.mysql.database.azure.com" `
+    DB_USER="admin_ingles" `
+    DB_PASSWORD="Gui11ermo1" `
+    DB_NAME="proyectoIngles" `
     DB_PORT="3306" `
+    JWT_SECRET="tu_clave_secreta_super_segura_2024_produccion" `
     NODE_ENV="production" `
     WEBSITE_NODE_DEFAULT_VERSION="18-lts"
 

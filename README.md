@@ -203,9 +203,9 @@ Ver instrucciones completas en `AZURE_DEPLOYMENT.md`
 ## 🔐 Configuración de Azure MySQL
 
 La aplicación ya está configurada para conectarse a Azure MySQL con SSL:
-- Host: `cosa-analizador.mysql.database.azure.com`
-- Usuario: `Martin`
-- Base de datos: `cosa-analizador`
+- Host: `mysqlingles.mysql.database.azure.com`
+- Usuario: `admin_ingles`
+- Base de datos: `proyectoIngles`
 - SSL: Habilitado automáticamente
 
 ## 🐛 Troubleshooting
