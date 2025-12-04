@@ -20,3 +20,7 @@ __pycache__/
 .pytest_cache/
 uploads/
 temp/
+
+# Azure deployment files
+*.zip
+azure-logs-latest/
