@@ -149,6 +149,34 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
+// Alias para compatibilidad con frontend (loginv1)
+app.post('/auth/loginv1', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ detail: 'Email y password son requeridos' });
+    }
+    
+    const user = await Usuario.findOne({ where: { email } });
+    
+    if (!user || user.password !== password) { 
+      return res.status(400).json({ detail: 'Credenciales incorrectas' });
+    }
+    
+    res.json({
+      token: user.email,
+      rol: user.rol,
+      nombre: user.nombre,
+      id: user.id
+    });
+    
+  } catch (error) {
+    console.error('Error en loginv1:', error);
+    res.status(500).json({ detail: 'Error en el servidor' });
+  }
+});
+
 // Upload y análisis (Solo Admin)
 app.post('/admin/upload-and-analyze/', authenticateToken, checkPermission('Admin'), upload.single('file'), async (req, res) => {
   try {
