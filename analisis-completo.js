@@ -22,7 +22,8 @@ const { Usuario, AlumnoDB, NotaDB, AnalisisResultadoDB, testConnection } = requi
     console.log(`Total de usuarios: ${totalUsuarios}`);
     
     const usuarios = await Usuario.findAll({ 
-      attributes: ['id', 'email', 'password_hash', 'rol', 'nombre']
+      attributes: ['id', 'email', 'password', 'rol', 'nombre'],
+      raw: true
     });
     
     console.log('\n📋 Listado completo de usuarios:\n');

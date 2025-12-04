@@ -5,8 +5,8 @@ const API_URL = 'https://apiazuremsc-anhefqf5gzepdcav.mexicocentral-01.azurewebs
 // const API_URL = 'http://localhost:3000'; // Descomentar para pruebas locales
 
 const usuarios = [
-  { email: 'admin@escuela.edu', password: 'admin', rol: 'Admin' },
-  { email: 'sofia.torres@escuela.edu', password: '12345', rol: 'Alumno' }
+  { email: 'admin@escuela.edu', password: '1234', rol: 'Admin' },
+  { email: 'sofia.torres@escuela.edu', password: '1234', rol: 'Alumno' }
 ];
 
 async function testAPI() {
