@@ -45,9 +45,10 @@ const Usuario = sequelize.define('Usuario', {
     unique: true,
     allowNull: false
   },
-  password_hash: {
+  password: {
     type: DataTypes.STRING(255),
-    allowNull: false
+    allowNull: false,
+    field: 'password_hash'
   },
   rol: {
     type: DataTypes.STRING(50),
@@ -216,25 +217,25 @@ async function initDbUser() {
       const usuariosPrueba = [
         {
           email: 'admin@escuela.edu',
-          password_hash: 'pass123',
+          password: 'pass123',
           rol: 'Admin',
           nombre: 'Admin Superior'
         },
         {
           email: 'docente@escuela.edu',
-          password_hash: 'pass123',
+          password: 'pass123',
           rol: 'Docente',
           nombre: 'Mtra. Elena'
         },
         {
           email: 'alumno@escuela.edu',
-          password_hash: 'pass123',
+          password: 'pass123',
           rol: 'Alumno',
           nombre: 'Alumno Test'
         },
         {
           email: 'padre@escuela.edu',
-          password_hash: 'pass123',
+          password: 'pass123',
           rol: 'Padre',
           nombre: 'Padre de Familia'
         }

@@ -125,7 +125,7 @@ app.post('/auth/login', async (req, res) => {
     
     const user = await Usuario.findOne({ where: { email } });
     
-    if (!user || user.password_hash !== password) {
+    if (!user || user.password !== password) {
       return res.status(400).json({ detail: 'Credenciales incorrectas' });
     }
     
