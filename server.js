@@ -119,16 +119,32 @@ app.post('/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
+    // Validar que se envíen los datos requeridos
     if (!email || !password) {
-      return res.status(400).json({ detail: 'Email y password son requeridos' });
+      return res.status(400).json({ 
+        error: 'Datos incompletos',
+        detail: 'Email y password son requeridos' 
+      });
     }
     
+    // Buscar usuario en la base de datos
     const user = await Usuario.findOne({ where: { email } });
     
-    if (!user || user.password !== password) {
-      return res.status(400).json({ detail: 'Credenciales incorrectas' });
+    if (!user) {
+      return res.status(401).json({ 
+        error: 'Credenciales incorrectas',
+        detail: 'El email no está registrado' 
+      });
     }
     
+    if (user.password !== password) {
+      return res.status(401).json({ 
+        error: 'Credenciales incorrectas',
+        detail: 'La contraseña es incorrecta' 
+      });
+    }
+    
+    // Login exitoso
     res.json({
       token: user.email,
       rol: user.rol,
@@ -138,7 +154,22 @@ app.post('/auth/login', async (req, res) => {
     
   } catch (error) {
     console.error('Error en login:', error);
-    res.status(500).json({ detail: 'Error en el servidor' });
+    
+    // Error de conexión a la base de datos
+    if (error.name === 'SequelizeConnectionError' || error.name === 'SequelizeConnectionRefusedError') {
+      return res.status(503).json({ 
+        error: 'Error de conexión',
+        detail: 'No se pudo conectar a la base de datos. Intente más tarde.',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Error genérico
+    res.status(500).json({ 
+      error: 'Error en el servidor',
+      detail: error.message || 'Error desconocido al procesar el login',
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
@@ -201,7 +232,11 @@ app.post('/admin/upload-and-analyze/', authenticateToken, checkPermission('Admin
     
   } catch (error) {
     console.error('Error en upload-and-analyze:', error);
-    res.status(500).json({ detail: error.message });
+    res.status(500).json({ 
+      error: 'Error al procesar el archivo',
+      detail: error.message || 'Error desconocido al analizar el archivo',
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
@@ -214,7 +249,11 @@ app.get('/dashboard/admin', authenticateToken, checkPermission('Admin'), async (
     });
   } catch (error) {
     console.error('Error en dashboard admin:', error);
-    res.status(500).json({ detail: 'Error en el servidor' });
+    res.status(500).json({ 
+      error: 'Error en el servidor',
+      detail: error.message || 'Error al cargar el dashboard',
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
@@ -227,8 +266,52 @@ app.get('/dashboard/docente', authenticateToken, checkPermission('Docente'), asy
     });
   } catch (error) {
     console.error('Error en dashboard docente:', error);
-    res.status(500).json({ detail: 'Error en el servidor' });
+    res.status(500).json({ 
+      error: 'Error en el servidor',
+      detail: error.message || 'Error al cargar el dashboard',
+      timestamp: new Date().toISOString()
+    });
   }
+});
+
+// --- MIDDLEWARE DE MANEJO DE ERRORES GLOBAL ---
+// Manejo de rutas no encontradas
+app.use((req, res, next) => {
+  res.status(404).json({
+    error: 'Ruta no encontrada',
+    detail: `La ruta ${req.method} ${req.path} no existe`,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Manejo global de errores
+app.use((err, req, res, next) => {
+  console.error('Error no manejado:', err);
+  
+  // Error de CORS
+  if (err.message === 'No permitido por CORS') {
+    return res.status(403).json({
+      error: 'CORS no permitido',
+      detail: `El origen ${req.headers.origin} no está autorizado`,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  // Error de Multer (archivos)
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({
+      error: 'Archivo demasiado grande',
+      detail: 'El archivo no debe superar los 10MB',
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  // Error genérico
+  res.status(err.status || 500).json({
+    error: err.message || 'Error interno del servidor',
+    detail: err.detail || 'Ocurrió un error inesperado',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // --- INICIALIZACIÓN DEL SERVIDOR ---
