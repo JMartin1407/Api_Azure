@@ -18,6 +18,7 @@ const PORT = process.env.PORT || 3000;
 const allowedOrigins = [
   'https://gray-beach-0cdc4470f.3.azurestaticapps.net',
   'https://blue-sea-02785951e3.azurestaticapps.net',
+  'https://blue-sea-02785951e.3.azurestaticapps.net', // URL correcta del frontend
   'http://localhost:3000',
   'http://localhost:5173', // Vite dev server
   'http://localhost:4200', // Angular dev server
