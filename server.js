@@ -5,6 +5,8 @@ const multer = require('multer');
 const XLSX = require('xlsx');
 require('dotenv').config();
 
+// Nota: Asegúrate de que estos módulos existen en tu proyecto.
+// Son placeholders para la lógica de BD y análisis.
 const { Usuario, AlumnoDB, NotaDB, AnalisisResultadoDB, initDbUser, testConnection } = require('./database');
 const { runAnalysisLogic, MATERIAS } = require('./analisis');
 
@@ -27,6 +29,7 @@ app.use(cors({
     // Permitir requests sin origin (como Postman, o curl)
     if (!origin) return callback(null, true);
     
+    // Permitir si está en la lista de permitidos o si el entorno es 'development'
     if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
       callback(null, true);
     } else {
@@ -59,6 +62,7 @@ async function authenticateToken(req, res, next) {
   const token = authHeader.split(' ')[1]; // El token es el email
   
   try {
+    // Busca el usuario usando el email como token simple (ejemplo)
     const user = await Usuario.findOne({ where: { email: token } });
     
     if (!user) {
@@ -82,7 +86,7 @@ async function authenticateToken(req, res, next) {
 // --- MIDDLEWARE DE PERMISOS ---
 function checkPermission(requiredRole) {
   return (req, res, next) => {
-    if (req.user.rol !== requiredRole) {
+    if (!req.user || req.user.rol !== requiredRole) {
       return res.status(403).json({ detail: 'Acceso denegado' });
     }
     next();
@@ -101,8 +105,8 @@ app.get('/', (req, res) => {
       login: '/auth/login',
       upload: '/admin/upload-and-analyze/',
       dashboards: {
-        admin: '/admin/dashboard/',
-        docente: '/docente/dashboard/'
+        admin: '/dashboard/admin',
+        docente: '/dashboard/docente'
       }
     },
     status: 'running'
@@ -119,32 +123,19 @@ app.post('/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Validar que se envíen los datos requeridos
     if (!email || !password) {
-      return res.status(400).json({ 
-        error: 'Datos incompletos',
-        detail: 'Email y password son requeridos' 
-      });
+      return res.status(400).json({ detail: 'Email y password son requeridos' });
     }
     
-    // Buscar usuario en la base de datos
     const user = await Usuario.findOne({ where: { email } });
     
-    if (!user) {
-      return res.status(401).json({ 
-        error: 'Credenciales incorrectas',
-        detail: 'El email no está registrado' 
-      });
+    // NOTA: En un entorno de producción, nunca se compararía la contraseña
+    // directamente, sino que se usaría hashing (e.g., bcrypt).
+    if (!user || user.password !== password) { 
+      return res.status(400).json({ detail: 'Credenciales incorrectas' });
     }
     
-    if (user.password !== password) {
-      return res.status(401).json({ 
-        error: 'Credenciales incorrectas',
-        detail: 'La contraseña es incorrecta' 
-      });
-    }
-    
-    // Login exitoso
+    // El email se usa como token simplificado en este ejemplo.
     res.json({
       token: user.email,
       rol: user.rol,
@@ -154,22 +145,7 @@ app.post('/auth/login', async (req, res) => {
     
   } catch (error) {
     console.error('Error en login:', error);
-    
-    // Error de conexión a la base de datos
-    if (error.name === 'SequelizeConnectionError' || error.name === 'SequelizeConnectionRefusedError') {
-      return res.status(503).json({ 
-        error: 'Error de conexión',
-        detail: 'No se pudo conectar a la base de datos. Intente más tarde.',
-        timestamp: new Date().toISOString()
-      });
-    }
-    
-    // Error genérico
-    res.status(500).json({ 
-      error: 'Error en el servidor',
-      detail: error.message || 'Error desconocido al procesar el login',
-      timestamp: new Date().toISOString()
-    });
+    res.status(500).json({ detail: 'Error en el servidor' });
   }
 });
 
@@ -184,23 +160,26 @@ app.post('/admin/upload-and-analyze/', authenticateToken, checkPermission('Admin
     const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
+    // Convertir a JSON
     const data = XLSX.utils.sheet_to_json(worksheet);
     
     if (!data || data.length === 0) {
       return res.status(400).json({ detail: 'El archivo está vacío o no tiene el formato correcto' });
     }
     
-    // Ejecutar análisis
+    // Ejecutar análisis (Lógica simulada)
     const resultados = runAnalysisLogic(data);
-    const df_procesado = resultados.df_procesado;
+    const df_procesado = resultados.df_procesado; // Asumiendo que retorna un array de objetos
     
     // Preparar datos de preview (primeros 10)
     const alumnos = df_procesado.slice(0, 10).map(row => {
       // Calcular detalle de promedios por materia
       const detalle_promedios_por_materia = {};
       MATERIAS.forEach(materia => {
-        const promedio_key = `${materia.toLowerCase()}_promedio`;
-        detalle_promedios_por_materia[materia] = parseFloat(row[promedio_key]) || 0;
+        // Uso de backticks para la interpolación de claves
+        const promedio_key = `${materia.toLowerCase()}_promedio`; 
+        // Uso de || 0 para manejo de valores NaN/null
+        detalle_promedios_por_materia[materia] = parseFloat(row[promedio_key]) || 0; 
       });
       
       return {
@@ -218,8 +197,8 @@ app.post('/admin/upload-and-analyze/', authenticateToken, checkPermission('Admin
       };
     });
     
-    // Calcular promedio de área de progreso
-    const area_de_progreso_promedio = df_procesado.reduce((acc, row) => acc + (row.area_de_progreso || 0), 0) / df_procesado.length;
+    // Calcular promedio de área de progreso grupal
+    const area_de_progreso_promedio = df_procesado.reduce((acc, row) => acc + (parseFloat(row.area_de_progreso) || 0), 0) / df_procesado.length;
     
     res.json({
       message: 'Análisis completado exitosamente',
@@ -232,111 +211,69 @@ app.post('/admin/upload-and-analyze/', authenticateToken, checkPermission('Admin
     
   } catch (error) {
     console.error('Error en upload-and-analyze:', error);
-    res.status(500).json({ 
-      error: 'Error al procesar el archivo',
-      detail: error.message || 'Error desconocido al analizar el archivo',
-      timestamp: new Date().toISOString()
-    });
+    // Incluir el stack trace en desarrollo, o solo el mensaje simple en producción
+    const errorMessage = process.env.NODE_ENV === 'development' ? error.message : 'Error interno del servidor';
+    res.status(500).json({ detail: errorMessage });
   }
 });
 
 // Dashboard Admin
 app.get('/dashboard/admin', authenticateToken, checkPermission('Admin'), async (req, res) => {
   try {
+    // Lógica para obtener datos del dashboard de Admin
     res.json({
-      message: `Bienvenido ${req.user.nombre}`,
-      data: {}
+      message: `Bienvenido ${req.user.nombre} (Admin)`,
+      data: {
+        // ... datos del admin dashboard
+      }
     });
   } catch (error) {
     console.error('Error en dashboard admin:', error);
-    res.status(500).json({ 
-      error: 'Error en el servidor',
-      detail: error.message || 'Error al cargar el dashboard',
-      timestamp: new Date().toISOString()
-    });
+    res.status(500).json({ detail: 'Error en el servidor' });
   }
 });
 
 // Dashboard Docente
 app.get('/dashboard/docente', authenticateToken, checkPermission('Docente'), async (req, res) => {
   try {
+    // Lógica para obtener datos del dashboard de Docente (quizás filtrados por materia)
     res.json({
-      message: `Bienvenido ${req.user.nombre}`,
-      data: {}
+      message: `Bienvenido ${req.user.nombre} (Docente)`,
+      data: {
+        // ... datos del docente dashboard
+      }
     });
   } catch (error) {
     console.error('Error en dashboard docente:', error);
-    res.status(500).json({ 
-      error: 'Error en el servidor',
-      detail: error.message || 'Error al cargar el dashboard',
-      timestamp: new Date().toISOString()
-    });
+    res.status(500).json({ detail: 'Error en el servidor' });
   }
-});
-
-// --- MIDDLEWARE DE MANEJO DE ERRORES GLOBAL ---
-// Manejo de rutas no encontradas
-app.use((req, res, next) => {
-  res.status(404).json({
-    error: 'Ruta no encontrada',
-    detail: `La ruta ${req.method} ${req.path} no existe`,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Manejo global de errores
-app.use((err, req, res, next) => {
-  console.error('Error no manejado:', err);
-  
-  // Error de CORS
-  if (err.message === 'No permitido por CORS') {
-    return res.status(403).json({
-      error: 'CORS no permitido',
-      detail: `El origen ${req.headers.origin} no está autorizado`,
-      timestamp: new Date().toISOString()
-    });
-  }
-  
-  // Error de Multer (archivos)
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(413).json({
-      error: 'Archivo demasiado grande',
-      detail: 'El archivo no debe superar los 10MB',
-      timestamp: new Date().toISOString()
-    });
-  }
-  
-  // Error genérico
-  res.status(err.status || 500).json({
-    error: err.message || 'Error interno del servidor',
-    detail: err.detail || 'Ocurrió un error inesperado',
-    timestamp: new Date().toISOString()
-  });
 });
 
 // --- INICIALIZACIÓN DEL SERVIDOR ---
 async function startServer() {
   try {
     // Probar conexión a la base de datos
-    const connected = await testConnection();
+    const connected = await testConnection(); // Función de prueba de BD
     
     if (connected) {
-      // Inicializar usuarios de prueba
-      await initDbUser();
+      // Inicializar usuarios de prueba o la BD si es necesario
+      await initDbUser(); 
+      console.log('✅ Conexión a la base de datos exitosa.');
     } else {
-      console.warn('⚠️ No se pudo conectar a la base de datos. El servidor continuará sin BD.');
+      console.warn('⚠️ No se pudo conectar a la base de datos. El servidor continuará sin funcionalidades de BD.');
     }
     
     // Iniciar servidor
     app.listen(PORT, () => {
       console.log(`\n🚀 Servidor Express corriendo en http://localhost:${PORT}`);
-      console.log(`📊 Smart Analytics API v1.0`);
-      console.log(`\n✅ Endpoints disponibles:`);
-      console.log(`   GET  /health`);
-      console.log(`   POST /auth/login`);
-      console.log(`   POST /admin/upload-and-analyze/`);
-      console.log(`   GET  /dashboard/admin`);
-      console.log(`   GET  /dashboard/docente\n`);
+      console.log('📊 Smart Analytics API v1.0');
+      console.log('\n✅ Endpoints disponibles:');
+      console.log('   GET  /');
+      console.log('   GET  /health');
+      console.log('   POST /auth/login');
+      console.log('   POST /admin/upload-and-analyze/ [Admin only]');
+      console.log('   GET  /dashboard/admin [Admin only]');
+      console.log('   GET  /dashboard/docente [Docente only]\n');
     });
     
   } catch (error) {
@@ -346,12 +283,14 @@ async function startServer() {
 }
 
 // Manejo de errores no capturados
-process.on('unhandledRejection', (error) => {
-  console.error('Unhandled Rejection:', error);
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  // No salir aquí, pero loguear y reportar.
 });
 
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  console.error('❌ Uncaught Exception:', error);
+  // Una excepción no capturada es un estado muy inestable, lo mejor es salir.
   process.exit(1);
 });
 
