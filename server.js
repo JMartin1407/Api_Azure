@@ -16,32 +16,37 @@ const PORT = process.env.PORT || 3000;
 // --- MIDDLEWARES ---
 // Configuración CORS para permitir frontend de Azure Static Web Apps
 const allowedOrigins = [
-  'https://gray-beach-0cdc4470f.3.azurestaticapps.net',
-  'https://blue-sea-02785951e3.azurestaticapps.net',
-  'https://blue-sea-02785951e.3.azurestaticapps.net', // URL correcta del frontend
+  'https://blue-sea-02785951e.3.azurestaticapps.net', // URL correcta del frontend,
   'http://localhost:3000',
-  'http://localhost:5173', // Vite dev server
-  'http://localhost:4200', // Angular dev server
-  'http://localhost:3001'  // React dev server alternativo
+  'http://localhost:5173',
+  'http://localhost:4200',
+  'http://localhost:3001'
 ];
 
+// Middleware CORS mejorado con manejo explícito de preflight
 app.use(cors({
   origin: function (origin, callback) {
     // Permitir requests sin origin (como Postman, o curl)
     if (!origin) return callback(null, true);
     
-    // Permitir si está en la lista de permitidos o si el entorno es 'development'
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+    // Permitir si está en la lista
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      console.log('Origin bloqueado:', origin);
       callback(new Error('No permitido por CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Manejar explícitamente OPTIONS para todas las rutas
+app.options('*', cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
