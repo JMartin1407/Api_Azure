@@ -17,6 +17,7 @@ const PORT = process.env.PORT || 3000;
 // Configuración CORS para permitir frontend de Azure Static Web Apps
 const allowedOrigins = [
   'https://blue-sea-02785951e.3.azurestaticapps.net', // URL correcta del frontend
+  'https://analizador-datos-xzux.vercel.app', // Frontend en Vercel
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:4200',
